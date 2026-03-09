@@ -14,22 +14,19 @@ go get github.com/Oleexo/config-go
 package main
 
 import (
-	"fmt"
-	"github.com/Oleexo/config-go"
-	"github.com/Oleexo/config-go/dotenv"
-	"github.com/Oleexo/config-go/envs"
-	"github.com/Oleexo/config-go/mem"
+ "fmt"
+ "github.com/Oleexo/config-go"
 )
 
 func main() {
-	config := config.NewConfiguration(
-		mem.WithMemory(map[string]string{
-			"key": "value",
-		}),
-		envs.WithEnvironmentVariables(),
-		dotenv.WithDotenv(),
-	)
+ config := config.NewConfiguration(
+  config.WithMemory(map[string]config.Entry{
+   "key": config.NewEntryString("value"),
+  }),
+  config.WithEnvironmentVariables(),
+  config.WithDotenvFiles(".env", ".env.local"),
+ )
 
-	fmt.Println(config.Get("key"))
+ fmt.Println(config.GetString("key"))
 }
 ```

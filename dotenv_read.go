@@ -1,8 +1,7 @@
-package dotenv
+package config
 
 import (
 	"bufio"
-	"github.com/Oleexo/config-go"
 	"os"
 	"regexp"
 	"strconv"
@@ -13,10 +12,10 @@ var (
 	envRegex = regexp.MustCompile(`\$\{(.+?)\}`)
 )
 
-func parseLineToEntry(line string) (string, config.Entry, error) {
+func parseLineToEntry(line string) (string, Entry, error) {
 	idx := strings.Index(line, "=")
 	if idx == -1 {
-		return "", config.Entry{}, nil
+		return "", Entry{}, nil
 	}
 	key := strings.TrimSpace(line[:idx])
 	value := strings.TrimSpace(line[idx+1:])
@@ -32,18 +31,18 @@ func parseLineToEntry(line string) (string, config.Entry, error) {
 	}
 
 	if intValue, err := strconv.ParseInt(value, 10, 64); err == nil {
-		return key, config.NewEntryInt(intValue), nil
+		return key, NewEntryInt(intValue), nil
 	}
 	if floatValue, err := strconv.ParseFloat(value, 64); err == nil {
-		return key, config.NewEntryFloat(floatValue), nil
+		return key, NewEntryFloat(floatValue), nil
 	}
 	if boolValue, err := strconv.ParseBool(value); err == nil {
-		return key, config.NewEntryBool(boolValue), nil
+		return key, NewEntryBool(boolValue), nil
 	}
-	return key, config.NewEntryString(value), nil
+	return key, NewEntryString(value), nil
 }
 
-func readFile(path string) (map[string]config.Entry, error) {
+func readDotenvFile(path string) (map[string]Entry, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -53,12 +52,12 @@ func readFile(path string) (map[string]config.Entry, error) {
 	}()
 
 	scanner := bufio.NewScanner(file)
-	result := make(map[string]config.Entry)
+	result := make(map[string]Entry)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		var key string
-		var entry config.Entry
+		var entry Entry
 		key, entry, err = parseLineToEntry(line)
 		if err != nil {
 			return nil, err
