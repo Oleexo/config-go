@@ -12,10 +12,10 @@ var (
 	envRegex = regexp.MustCompile(`\$\{(.+?)\}`)
 )
 
-func parseLineToEntry(line string) (string, Entry, error) {
+func parseLineToEntry(line string) (string, Entry) {
 	idx := strings.Index(line, "=")
 	if idx == -1 {
-		return "", Entry{}, nil
+		return "", Entry{}
 	}
 	key := strings.TrimSpace(line[:idx])
 	value := strings.TrimSpace(line[idx+1:])
@@ -26,48 +26,47 @@ func parseLineToEntry(line string) (string, Entry, error) {
 		for _, match := range matches {
 			envKey := match[1]
 			envValue := os.Getenv(envKey)
-			value = strings.Replace(value, match[0], envValue, -1)
+			value = strings.ReplaceAll(value, match[0], envValue)
 		}
 	}
 
 	if intValue, err := strconv.ParseInt(value, 10, 64); err == nil {
-		return key, NewEntryInt(intValue), nil
+		return key, NewInt(intValue)
 	}
 	if floatValue, err := strconv.ParseFloat(value, 64); err == nil {
-		return key, NewEntryFloat(floatValue), nil
+		return key, NewFloat(floatValue)
 	}
 	if boolValue, err := strconv.ParseBool(value); err == nil {
-		return key, NewEntryBool(boolValue), nil
+		return key, NewBool(boolValue)
 	}
-	return key, NewEntryString(value), nil
+	return key, NewString(value)
 }
 
-func readDotenvFile(path string) (map[string]Entry, error) {
+func readDotenvFile(path string) (result map[string]Entry, err error) {
+	// #nosec G304 -- dotenv paths are intentionally provided by caller options.
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
-		_ = file.Close()
+		closeErr := file.Close()
+		if err == nil && closeErr != nil {
+			err = closeErr
+		}
 	}()
 
 	scanner := bufio.NewScanner(file)
-	result := make(map[string]Entry)
+	result = make(map[string]Entry)
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		var key string
-		var entry Entry
-		key, entry, err = parseLineToEntry(line)
-		if err != nil {
-			return nil, err
-		}
+		key, entry := parseLineToEntry(line)
 		if key != "" {
 			result[key] = entry
 		}
 	}
 
-	if err = scanner.Err(); err != nil {
+	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
 

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strings"
 )
@@ -9,19 +10,32 @@ type dotenvProvider struct {
 	entries map[string]Entry
 }
 
-func WithDotenv() ConfigurationOptionFunc {
+func WithDotenv() Option {
 	return WithDotenvFiles(resolveDefaultDotenvFiles()...)
 }
 
 // WithDotenvFiles loads dotenv files in order.
 // Later files override values from earlier files.
-func WithDotenvFiles(files ...string) ConfigurationOptionFunc {
-	return func(c *ConfigurationOptions) {
-		p := newDotenvProvider(files...)
-		if p == nil {
-			return
+func WithDotenvFiles(files ...string) Option {
+	return withDotenvFiles(false, files...)
+}
+
+// WithDotenvFilesStrict loads dotenv files in order and fails if any file is missing.
+func WithDotenvFilesStrict(files ...string) Option {
+	return withDotenvFiles(true, files...)
+}
+
+func withDotenvFiles(strict bool, files ...string) Option {
+	return func(c *optionSet) error {
+		p, err := newDotenvProvider(strict, files...)
+		if err != nil {
+			return err
 		}
-		c.AddProvider(p)
+		if p == nil {
+			return nil
+		}
+		c.addProvider(p)
+		return nil
 	}
 }
 
@@ -44,7 +58,7 @@ func resolveDefaultDotenvFiles() []string {
 	return files
 }
 
-func newDotenvProvider(files ...string) *dotenvProvider {
+func newDotenvProvider(strict bool, files ...string) (*dotenvProvider, error) {
 	if len(files) == 0 {
 		files = []string{defaultDotenvFileName}
 	}
@@ -53,12 +67,17 @@ func newDotenvProvider(files ...string) *dotenvProvider {
 	loaded := false
 	for _, file := range files {
 		if _, err := os.Stat(file); os.IsNotExist(err) {
+			if strict {
+				return nil, fmt.Errorf("dotenv file %q: %w", file, ErrDotenvFileNotFound)
+			}
 			continue
+		} else if err != nil {
+			return nil, err
 		}
 
 		fileEntries, err := readDotenvFile(file)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		for key, value := range fileEntries {
 			entries[key] = value
@@ -67,20 +86,23 @@ func newDotenvProvider(files ...string) *dotenvProvider {
 	}
 
 	if !loaded {
-		return nil
+		if strict {
+			return nil, ErrDotenvFileNotFound
+		}
+		return nil, nil
 	}
 
-	return &dotenvProvider{entries: entries}
+	return &dotenvProvider{entries: entries}, nil
 }
 
-func (p dotenvProvider) Priority() int {
+func (p dotenvProvider) Precedence() int {
 	return 1000
 }
 
 func (p dotenvProvider) GetEntry(key string) Entry {
 	entry, ok := p.entries[key]
 	if !ok {
-		return NewEntryEmpty()
+		return Empty()
 	}
 	return entry
 }

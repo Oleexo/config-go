@@ -1,7 +1,7 @@
 package config
 
 type Provider interface {
-	Priority() int
+	Precedence() int
 	GetEntry(key string) Entry
 }
 
@@ -12,5 +12,5 @@ func (p Providers) Len() int {
 }
 
 func (p Providers) Less(i, j int) bool {
-	return p[i].Priority() < p[j].Priority()
+	return p[i].Precedence() < p[j].Precedence()
 }

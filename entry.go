@@ -1,47 +1,46 @@
 package config
 
+import "fmt"
+
 type Entry struct {
-	exists     bool
-	valueType  ValueType
-	valueStr   *string
-	valueInt   *int64
-	valueFloat *float64
-	valueBool  *bool
+	value  any
+	kind   ValueKind
+	exists bool
 }
 
-func NewEntryString(value string) Entry {
+func NewString(value string) Entry {
 	return Entry{
-		exists:    true,
-		valueType: STRING,
-		valueStr:  &value,
+		exists: true,
+		kind:   KindString,
+		value:  value,
 	}
 }
 
-func NewEntryInt(value int64) Entry {
+func NewInt(value int64) Entry {
 	return Entry{
-		exists:    true,
-		valueType: INT,
-		valueInt:  &value,
+		exists: true,
+		kind:   KindInt,
+		value:  value,
 	}
 }
 
-func NewEntryFloat(value float64) Entry {
+func NewFloat(value float64) Entry {
 	return Entry{
-		exists:     true,
-		valueType:  FLOAT,
-		valueFloat: &value,
+		exists: true,
+		kind:   KindFloat,
+		value:  value,
 	}
 }
 
-func NewEntryBool(value bool) Entry {
+func NewBool(value bool) Entry {
 	return Entry{
-		exists:    true,
-		valueType: BOOL,
-		valueBool: &value,
+		exists: true,
+		kind:   KindBool,
+		value:  value,
 	}
 }
 
-func NewEntryEmpty() Entry {
+func Empty() Entry {
 	return Entry{
 		exists: false,
 	}
@@ -51,22 +50,50 @@ func (e Entry) Exists() bool {
 	return e.exists
 }
 
-func (e Entry) ValueType() ValueType {
-	return e.valueType
+func (e Entry) Kind() ValueKind {
+	return e.kind
 }
 
-func (e Entry) String() string {
-	return *e.valueStr
+func (e Entry) String() (string, error) {
+	if !e.exists {
+		return "", ErrKeyNotFound
+	}
+	v, ok := e.value.(string)
+	if !ok {
+		return "", fmt.Errorf("%w: expected %s got %s", ErrTypeMismatch, KindString, e.kind)
+	}
+	return v, nil
 }
 
-func (e Entry) Int() int64 {
-	return *e.valueInt
+func (e Entry) Int() (int64, error) {
+	if !e.exists {
+		return 0, ErrKeyNotFound
+	}
+	v, ok := e.value.(int64)
+	if !ok {
+		return 0, fmt.Errorf("%w: expected %s got %s", ErrTypeMismatch, KindInt, e.kind)
+	}
+	return v, nil
 }
 
-func (e Entry) Float() float64 {
-	return *e.valueFloat
+func (e Entry) Float() (float64, error) {
+	if !e.exists {
+		return 0, ErrKeyNotFound
+	}
+	v, ok := e.value.(float64)
+	if !ok {
+		return 0, fmt.Errorf("%w: expected %s got %s", ErrTypeMismatch, KindFloat, e.kind)
+	}
+	return v, nil
 }
 
-func (e Entry) Bool() bool {
-	return *e.valueBool
+func (e Entry) Bool() (bool, error) {
+	if !e.exists {
+		return false, ErrKeyNotFound
+	}
+	v, ok := e.value.(bool)
+	if !ok {
+		return false, fmt.Errorf("%w: expected %s got %s", ErrTypeMismatch, KindBool, e.kind)
+	}
+	return v, nil
 }
