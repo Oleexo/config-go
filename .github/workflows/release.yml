@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+
+      - name: Validate module
+        run: |
+          go mod tidy
+          git diff --exit-code
+          go test -v ./...
+          go test -race ./...
+          go vet ./...
+
+      - name: Create source archives
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+
+          git archive --format=tar.gz --prefix=config-go-${VERSION}/ -o config-go-${VERSION}.tar.gz ${GITHUB_SHA}
+          git archive --format=zip --prefix=config-go-${VERSION}/ -o config-go-${VERSION}.zip ${GITHUB_SHA}
+
+          sha256sum config-go-${VERSION}.tar.gz config-go-${VERSION}.zip > checksums.txt
+
+      - name: Verify checksums file
+        run: cat checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            config-go-*.tar.gz
+            config-go-*.zip
+            checksums.txt
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

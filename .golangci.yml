@@ -1,0 +1,61 @@
+version: '2'
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - revive
+    - gosec
+    - misspell
+    - unconvert
+    - unparam
+    - nakedret
+    - gocritic
+    - funlen
+  settings:
+    funlen:
+      lines: 60
+      statements: 60
+      ignore-comments: true
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    
+    govet:
+      enable-all: true
+    
+    revive:
+      confidence: 0.8
+    
+    gosec:
+      severity: medium
+      confidence: medium
+    
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+
+  exclusions:
+    rules:
+      # Bubble Tea models must use value receivers to satisfy tea.Model interface.
+      - path: cmd/cli/tui/.*\.go
+        linters: [gocritic]
+        text: "hugeParam"
+      # engine.GameSnapshot passed by value intentionally in broadcast helpers.
+      - path: internal/lobby/room
+        linters: [gocritic]
+        text: "hugeParam"
+
+issues:
+  max-same-issues: 0
+
+run:
+  timeout: 5m
+  go: '1.25'
