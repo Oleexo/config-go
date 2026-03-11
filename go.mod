@@ -1,4 +1,4 @@
-module github.com/Oleexo/config-go
+module github.com/Oleexo/config-go/v2
 
 go 1.26
 
