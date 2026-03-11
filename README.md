@@ -5,7 +5,7 @@ Config Go is a small library for layered configuration loading with an error-fir
 ## Installation
 
 ```bash
-go get github.com/Oleexo/config-go
+go get github.com/Oleexo/config-go/v2
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ import (
     "errors"
     "fmt"
 
- "github.com/Oleexo/config-go"
+ "github.com/Oleexo/config-go/v2"
 )
 
 func main() {
